@@ -1,0 +1,71 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run tests
+        run: uv run pytest tests/ -v
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      - name: Deploy to OCI
+        env:
+          SSH_KEY: ${{ secrets.OCI_SSH_KEY }}
+          HOST: ${{ secrets.TAILSCALE_IP }}
+        run: |
+          echo "$SSH_KEY" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+
+          ssh -i /tmp/deploy_key \
+              -o StrictHostKeyChecking=no \
+              ubuntu@$HOST \
+              'cd ~/sc-scraper && git pull && uv sync --no-dev && sudo systemctl restart sc-scraper'
+
+          rm /tmp/deploy_key
+
+      - name: Verify deployment
+        env:
+          SSH_KEY: ${{ secrets.OCI_SSH_KEY }}
+          HOST: ${{ secrets.TAILSCALE_IP }}
+        run: |
+          echo "$SSH_KEY" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+
+          ssh -i /tmp/deploy_key \
+              -o StrictHostKeyChecking=no \
+              ubuntu@$HOST \
+              'sudo systemctl is-active sc-scraper && curl -sf http://localhost:8001/health'
+
+          rm /tmp/deploy_key
