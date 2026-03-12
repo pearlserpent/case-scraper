@@ -31,41 +31,32 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
+        uses: tailscale/github-action@v4
         with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          version: latest
+
+      - name: Verify Tailscale connection
+        run: |
+          tailscale status
+          tailscale ip -4
 
       - name: Deploy to OCI
-        env:
-          SSH_KEY: ${{ secrets.OCI_SSH_KEY }}
-          HOST: ${{ secrets.TAILSCALE_IP }}
         run: |
-          echo "$SSH_KEY" > /tmp/deploy_key
-          chmod 600 /tmp/deploy_key
-
-          ssh -i /tmp/deploy_key \
-              -o StrictHostKeyChecking=no \
-              ubuntu@$HOST \
-              'cd ~/sc-scraper && git pull && uv sync --no-dev && sudo systemctl restart sc-scraper'
-
-          rm /tmp/deploy_key
+          ssh -o StrictHostKeyChecking=no \
+              ubuntu@${{ secrets.TAILSCALE_IP }} \
+              'cd ~/case-scraper && git pull && uv sync --no-dev && sudo systemctl restart case-scraper'
 
       - name: Verify deployment
-        env:
-          SSH_KEY: ${{ secrets.OCI_SSH_KEY }}
-          HOST: ${{ secrets.TAILSCALE_IP }}
         run: |
-          echo "$SSH_KEY" > /tmp/deploy_key
-          chmod 600 /tmp/deploy_key
-
-          ssh -i /tmp/deploy_key \
-              -o StrictHostKeyChecking=no \
-              ubuntu@$HOST \
-              'sudo systemctl is-active sc-scraper && curl -sf http://localhost:8001/health'
-
-          rm /tmp/deploy_key
+          ssh -o StrictHostKeyChecking=no \
+              ubuntu@${{ secrets.TAILSCALE_IP }} \
+              'sudo systemctl is-active case-scraper && curl -sf http://localhost:8001/health'
