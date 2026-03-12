@@ -54,7 +54,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no \
               ubuntu@${{ secrets.TAILSCALE_IP }} \
-              'cd ~/case-scraper && git pull && uv sync --no-dev && sudo systemctl restart case-scraper'
+              'export PATH="$HOME/.local/bin:$PATH" && cd ~/case-scraper && git pull && uv sync --no-dev && sudo systemctl restart case-scraper'
 
       - name: Verify deployment
         run: |
