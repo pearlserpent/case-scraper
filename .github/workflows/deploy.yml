@@ -54,10 +54,10 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no \
               ubuntu@${{ secrets.TAILSCALE_IP }} \
-              'export PATH="$HOME/.local/bin:$PATH" && cd ~/case-scraper && git pull && uv sync --no-dev && sudo systemctl restart case-scraper'
+              'export PATH="$HOME/.local/bin:$PATH" && cd ~/algo-delta && git pull && uv sync --no-dev && sudo systemctl restart algo-delta'
 
       - name: Verify deployment
         run: |
           ssh -o StrictHostKeyChecking=no \
               ubuntu@${{ secrets.TAILSCALE_IP }} \
-              'sudo systemctl is-active case-scraper && curl -sf http://localhost:8001/health'
+              'sudo systemctl is-active algo-delta && curl -sf http://localhost:8001/health'

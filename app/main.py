@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-app = FastAPI(title="My API", version="1.0.0")
+app = FastAPI(title="Algo Delta", version="1.0.0")
 
 @app.get("/health")
 async def health() -> dict:
