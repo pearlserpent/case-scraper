@@ -4,6 +4,8 @@ import requests
 import time
 from config import get_settings
 
+from chart_patterns import detect_rectangles
+
 settings = get_settings()
 BASE_URL = "https://cdn-ind.testnet.deltaex.org"
 
@@ -87,8 +89,9 @@ def get_candles(
     return df.astype({"open": float, "high": float, "low": float, "close": float, "volume": float})
 
 
-# Usage
-df = get_candles("ETHUSD", resolution="15m", days_back=1)
-print(df)
+if __name__ == "__main__":
+    # Usage
+    df = get_candles("ETHUSD", resolution="15m", days_back=1)
+    print(df)
 
 
